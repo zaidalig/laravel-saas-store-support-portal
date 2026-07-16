@@ -1,17 +1,24 @@
 <?php
 
-use App\Models\Setting;
+use App\Services\MediaStorage;
 
-if (! function_exists('setting')) {
-    function setting(string $key, mixed $default = null): mixed
+if (! function_exists('media_url')) {
+    function media_url(?string $path): ?string
     {
-        return cache()->remember("setting_{$key}", 60, fn () => Setting::where('key', $key)->value('value') ?? $default);
+        return MediaStorage::url($path);
     }
 }
 
-if (! function_exists('next_number')) {
-    function next_number(string $prefix): string
+if (! function_exists('asset_cdn')) {
+    /**
+     * Frontend asset URL: CDN when ASSET_CDN is enabled, otherwise a local asset path.
+     */
+    function asset_cdn(string $key, ?string $local = null): string
     {
-        return $prefix.'-'.now()->format('Ymd').'-'.str_pad((string) random_int(1, 99999), 5, '0', STR_PAD_LEFT);
+        if (config('cdn.assets.enabled', true)) {
+            return (string) config("cdn.assets.{$key}", $local ?? '');
+        }
+
+        return $local ? asset($local) : (string) config("cdn.assets.{$key}", '');
     }
 }
