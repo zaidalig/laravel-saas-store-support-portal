@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Admin\AdminResourceController;
+use App\Http\Controllers\Admin\AdminSubscriptionController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerDashboardController;
@@ -44,6 +45,9 @@ Route::middleware(['auth', 'customer.access'])->prefix('dashboard')->name('dashb
     Route::post('/tickets/{ticket}/reply', [CustomerDashboardController::class, 'reply'])->name('.tickets.reply');
     Route::get('/profile', [CustomerDashboardController::class, 'profile'])->name('.profile');
     Route::put('/profile', [CustomerDashboardController::class, 'updateProfile'])->name('.profile.update');
+    Route::get('/subscriptions', [CustomerDashboardController::class, 'subscriptions'])->name('.subscriptions');
+    Route::post('/subscriptions/{pricingPlan}', [CustomerDashboardController::class, 'subscribe'])->name('.subscriptions.store');
+    Route::post('/subscriptions/{subscription}/cancel', [CustomerDashboardController::class, 'cancelSubscription'])->name('.subscriptions.cancel');
 });
 
 Route::middleware(['auth', 'customer.access'])->group(function () {
@@ -88,6 +92,7 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->gr
     Route::get('/invoices/{invoice}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/print', [AdminInvoiceController::class, 'print'])->name('invoices.print');
     Route::put('/invoices/{invoice}', [AdminInvoiceController::class, 'update'])->name('invoices.update');
+    Route::get('/subscriptions', [AdminSubscriptionController::class, 'index'])->name('subscriptions.index');
     Route::get('/support-tickets', [AdminTicketController::class, 'index'])->name('support-tickets.index');
     Route::get('/support-tickets/{supportTicket}', [AdminTicketController::class, 'show'])->name('support-tickets.show');
     Route::put('/support-tickets/{supportTicket}', [AdminTicketController::class, 'update'])->name('support-tickets.update');

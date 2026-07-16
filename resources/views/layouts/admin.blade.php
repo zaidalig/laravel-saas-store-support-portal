@@ -5,6 +5,7 @@ $links = [
     'orders' => 'Orders',
     'payments' => 'Payments',
     'invoices' => 'Invoices',
+    'subscriptions' => 'Subscriptions',
     'products' => 'Products',
     'categories' => 'Categories',
     'pricing-plans' => 'Pricing Plans',
@@ -22,6 +23,7 @@ if (auth()->user()?->isAdmin()) {
         'orders' => 'Orders',
         'payments' => 'Payments',
         'invoices' => 'Invoices',
+        'subscriptions' => 'Subscriptions',
         'support-tickets' => 'Support Tickets',
         'contact-messages' => 'Contact Messages',
         'activity-logs' => 'Activity Logs',
@@ -29,4 +31,4 @@ if (auth()->user()?->isAdmin()) {
     ];
 }
 @endphp
-@foreach($links as $key=>$label)<a class="{{ request()->routeIs('admin.'.$key.'*') ? 'active' : '' }}" href="{{ $key==='dashboard' ? route('admin.dashboard') : route('admin.'.$key.'.index') }}"><i class="fa-solid fa-circle-dot small"></i>{{ $label }}</a>@endforeach</div></aside><main class="app-main"><header class="app-topbar no-print"><h5 class="m-0 fw-bold">@yield('page_title','Admin') <span class="badge bg-light text-dark border ms-2">{{ ucfirst(auth()->user()->role) }}</span></h5><form action="{{ route('logout') }}" method="POST">@csrf<button class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form></header><section class="content">@include('partials.flash')@yield('content')</section></main><div class="modal fade" id="deleteModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirm Delete</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">This action cannot be undone.</div><div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><form id="deleteForm" method="POST">@csrf @method('DELETE')<button class="btn btn-danger">Delete</button></form></div></div></div></div><script src="{{ asset_cdn('bootstrap_js', 'vendor/bootstrap/bootstrap.bundle.min.js') }}"></script><script>document.getElementById('deleteModal')?.addEventListener('show.bs.modal',e=>document.getElementById('deleteForm').action=e.relatedTarget.dataset.url)</script></body></html>
+@foreach($links as $key=>$label)<a class="{{ request()->routeIs('admin.'.$key.'*') || ($key==='dashboard' && request()->routeIs('admin.dashboard')) ? 'active' : '' }}" href="{{ $key==='dashboard' ? route('admin.dashboard') : route('admin.'.$key.'.index') }}"><i class="fa-solid fa-circle-dot small"></i>{{ $label }}</a>@endforeach</div></aside><main class="app-main"><header class="app-topbar no-print"><h5 class="m-0 fw-bold">@yield('page_title','Admin') <span class="badge bg-light text-dark border ms-2">{{ ucfirst(auth()->user()->role) }}</span></h5><form action="{{ route('logout') }}" method="POST">@csrf<button class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form></header><section class="content">@include('partials.flash')@yield('content')</section></main><div class="modal fade" id="deleteModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirm Delete</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">This action cannot be undone.</div><div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><form id="deleteForm" method="POST">@csrf @method('DELETE')<button class="btn btn-danger">Delete</button></form></div></div></div></div><script src="{{ asset_cdn('bootstrap_js', 'vendor/bootstrap/bootstrap.bundle.min.js') }}"></script><script>document.getElementById('deleteModal')?.addEventListener('show.bs.modal',e=>document.getElementById('deleteForm').action=e.relatedTarget.dataset.url)</script></body></html>
