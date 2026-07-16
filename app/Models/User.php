@@ -29,6 +29,16 @@ class User extends Authenticatable
         return in_array($this->role, ['admin', 'staff'], true) && $this->status === 'active';
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' && $this->status === 'active';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff' && $this->status === 'active';
+    }
+
     public function isCustomer(): bool
     {
         return $this->role === 'customer' && $this->status === 'active';

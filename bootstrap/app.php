@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin.access' => AdminAccess::class,
+            'admin.only' => \App\Http\Middleware\EnsureIsAdmin::class,
             'customer.access' => CustomerAccess::class,
         ]);
     })
