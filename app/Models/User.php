@@ -29,6 +29,16 @@ class User extends Authenticatable
         return in_array($this->role, ['admin', 'staff'], true) && $this->status === 'active';
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' && $this->status === 'active';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff' && $this->status === 'active';
+    }
+
     public function isCustomer(): bool
     {
         return $this->role === 'customer' && $this->status === 'active';
@@ -37,6 +47,7 @@ class User extends Authenticatable
     public function orders() { return $this->hasMany(Order::class); }
     public function invoices() { return $this->hasMany(Invoice::class); }
     public function payments() { return $this->hasMany(Payment::class); }
+    public function subscriptions() { return $this->hasMany(Subscription::class); }
     public function supportTickets() { return $this->hasMany(SupportTicket::class); }
     public function teamMemberships() { return $this->hasMany(TeamMember::class); }
 }

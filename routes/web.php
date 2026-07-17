@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Admin\AdminResourceController;
+use App\Http\Controllers\Admin\AdminSubscriptionController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerDashboardController;
@@ -44,6 +45,9 @@ Route::middleware(['auth', 'customer.access'])->prefix('dashboard')->name('dashb
     Route::post('/tickets/{ticket}/reply', [CustomerDashboardController::class, 'reply'])->name('.tickets.reply');
     Route::get('/profile', [CustomerDashboardController::class, 'profile'])->name('.profile');
     Route::put('/profile', [CustomerDashboardController::class, 'updateProfile'])->name('.profile.update');
+    Route::get('/subscriptions', [CustomerDashboardController::class, 'subscriptions'])->name('.subscriptions');
+    Route::post('/subscriptions/{pricingPlan}', [CustomerDashboardController::class, 'subscribe'])->name('.subscriptions.store');
+    Route::post('/subscriptions/{subscription}/cancel', [CustomerDashboardController::class, 'cancelSubscription'])->name('.subscriptions.cancel');
 });
 
 Route::middleware(['auth', 'customer.access'])->group(function () {
@@ -53,7 +57,11 @@ Route::middleware(['auth', 'customer.access'])->group(function () {
 
 Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboardController::class)->name('dashboard');
-    foreach (array_keys(config('admin_resources')) as $resource) {
+
+    $staffResources = ['categories', 'products', 'pricing-plans', 'contact-messages'];
+    $adminOnlyResources = ['users', 'teams', 'team-members', 'settings'];
+
+    foreach ($staffResources as $resource) {
         Route::get("/{$resource}", [AdminResourceController::class, 'index'])->defaults('resource', $resource)->name("{$resource}.index");
         Route::get("/{$resource}/create", [AdminResourceController::class, 'create'])->defaults('resource', $resource)->name("{$resource}.create");
         Route::post("/{$resource}", [AdminResourceController::class, 'store'])->defaults('resource', $resource)->name("{$resource}.store");
@@ -61,6 +69,19 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->gr
         Route::put("/{$resource}/{id}", [AdminResourceController::class, 'update'])->defaults('resource', $resource)->name("{$resource}.update");
         Route::delete("/{$resource}/{id}", [AdminResourceController::class, 'destroy'])->defaults('resource', $resource)->name("{$resource}.destroy");
     }
+
+    Route::middleware('admin.only')->group(function () use ($adminOnlyResources) {
+        foreach ($adminOnlyResources as $resource) {
+            Route::get("/{$resource}", [AdminResourceController::class, 'index'])->defaults('resource', $resource)->name("{$resource}.index");
+            Route::get("/{$resource}/create", [AdminResourceController::class, 'create'])->defaults('resource', $resource)->name("{$resource}.create");
+            Route::post("/{$resource}", [AdminResourceController::class, 'store'])->defaults('resource', $resource)->name("{$resource}.store");
+            Route::get("/{$resource}/{id}/edit", [AdminResourceController::class, 'edit'])->defaults('resource', $resource)->name("{$resource}.edit");
+            Route::put("/{$resource}/{id}", [AdminResourceController::class, 'update'])->defaults('resource', $resource)->name("{$resource}.update");
+            Route::delete("/{$resource}/{id}", [AdminResourceController::class, 'destroy'])->defaults('resource', $resource)->name("{$resource}.destroy");
+        }
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    });
+
     Route::resource('orders', AdminOrderController::class);
     Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [AdminPaymentController::class, 'store'])->name('payments.store');
@@ -71,9 +92,9 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->gr
     Route::get('/invoices/{invoice}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/print', [AdminInvoiceController::class, 'print'])->name('invoices.print');
     Route::put('/invoices/{invoice}', [AdminInvoiceController::class, 'update'])->name('invoices.update');
+    Route::get('/subscriptions', [AdminSubscriptionController::class, 'index'])->name('subscriptions.index');
     Route::get('/support-tickets', [AdminTicketController::class, 'index'])->name('support-tickets.index');
     Route::get('/support-tickets/{supportTicket}', [AdminTicketController::class, 'show'])->name('support-tickets.show');
     Route::put('/support-tickets/{supportTicket}', [AdminTicketController::class, 'update'])->name('support-tickets.update');
     Route::post('/support-tickets/{supportTicket}/reply', [AdminTicketController::class, 'reply'])->name('support-tickets.reply');
-    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 });

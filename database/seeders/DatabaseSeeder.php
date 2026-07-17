@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\PricingPlan;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\Subscription;
 use App\Models\SupportTicket;
 use App\Models\Team;
 use App\Models\TeamMember;
@@ -27,7 +28,7 @@ class DatabaseSeeder extends Seeder
         $staff = collect(range(1,2))->map(fn($i)=>User::create(['name'=>"Staff {$i}",'email'=>"staff{$i}@example.com",'password'=>'password','role'=>'staff','status'=>'active']));
         $customers = collect(range(1,5))->map(fn($i)=>User::create(['name'=>"Customer {$i}",'email'=>"customer{$i}@example.com",'password'=>'password','role'=>'customer','status'=>'active']));
 
-        collect(['site_name'=>'SaaS Store Portal','site_email'=>'support@example.com','site_phone'=>'+1 555 1000','tax_percentage'=>'8','invoice_prefix'=>'INV','order_prefix'=>'ORD','ticket_prefix'=>'TCK'])
+        collect(['site_name'=>'SaaS Store Portal','site_email'=>'support@example.com','site_phone'=>'+1 555 1000','tax_percentage'=>'8','invoice_prefix'=>'INV','order_prefix'=>'ORD','ticket_prefix'=>'TCK','subscription_prefix'=>'SUB'])
             ->each(fn($v,$k)=>Setting::create(['key'=>$k,'value'=>$v,'type'=>is_numeric($v)?'number':'text']));
 
         $teams = collect(['Sales Support','Product Delivery','Customer Success'])->map(fn($name)=>Team::create(['name'=>$name,'description'=>"{$name} team",'status'=>'active']));
@@ -42,6 +43,9 @@ class DatabaseSeeder extends Seeder
             return Product::create(['category_id'=>$categories[($i-1)%5]->id,'name'=>$name,'slug'=>Str::slug($name),'short_description'=>'Professional SaaS service package.','description'=>"Detailed implementation and support for {$name}.",'price'=>99 + ($i*25),'billing_type'=>['one_time','monthly','yearly'][$i%3],'status'=>'active']);
         });
         collect([['Starter',49,30],['Growth',149,30],['Scale',399,365]])->each(fn($p,$i)=>PricingPlan::create(['name'=>$p[0],'slug'=>Str::slug($p[0]),'price'=>$p[1],'duration_days'=>$p[2],'features'=>"Product access\nEmail support\nInvoice tracking",'status'=>'active','display_order'=>$i+1]));
+        $plans = PricingPlan::orderBy('display_order')->get();
+        Subscription::create(['user_id'=>$customers[0]->id,'pricing_plan_id'=>$plans[0]->id,'subscription_number'=>'SUB-20260716-00001','status'=>'active','starts_at'=>now()->subDays(5),'ends_at'=>now()->addDays(25)]);
+        Subscription::create(['user_id'=>$customers[1]->id,'pricing_plan_id'=>$plans[1]->id,'subscription_number'=>'SUB-20260716-00002','status'=>'cancelled','starts_at'=>now()->subDays(40),'ends_at'=>now()->subDays(10),'cancelled_at'=>now()->subDays(12)]);
 
         foreach (range(1,10) as $i) {
             $customer = $customers[($i-1)%5];

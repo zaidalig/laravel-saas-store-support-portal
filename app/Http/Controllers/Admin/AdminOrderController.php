@@ -12,10 +12,22 @@ class AdminOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $orders = Order::with('user')->when($request->search, fn($q,$s)=>$q->where('order_number','like',"%{$s}%")->orWhere('customer_email','like',"%{$s}%")->orWhere('customer_name','like',"%{$s}%"))
+        $perPage = in_array((int) $request->input('per_page', 10), [10, 25, 50, 100], true)
+            ? (int) $request->input('per_page', 10)
+            : 10;
+        $sort = in_array($request->input('sort'), ['created_at', 'order_number', 'customer_name', 'total', 'status'], true)
+            ? $request->input('sort')
+            : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+
+        $orders = Order::with('user')->when($request->search, fn($q,$s)=>$q->where(function ($nested) use ($s) {
+                $nested->where('order_number','like',"%{$s}%")
+                    ->orWhere('customer_email','like',"%{$s}%")
+                    ->orWhere('customer_name','like',"%{$s}%");
+            }))
             ->when($request->status, fn($q,$s)=>$q->where('status',$s))
             ->when($request->payment_status, fn($q,$s)=>$q->where('payment_status',$s))
-            ->latest()->paginate(10)->withQueryString();
+            ->orderBy($sort, $direction)->paginate($perPage)->withQueryString();
         return view('admin.orders.index', compact('orders'));
     }
 

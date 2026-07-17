@@ -18,6 +18,12 @@ class AdminResourceController extends Controller
     public function index(Request $request)
     {
         $cfg = $this->cfg($request);
+        $allowedSorts = array_values(array_filter(
+            array_map(fn ($column) => str_contains($column, '.') ? null : $column, $cfg['columns'])
+        ));
+        $perPage = in_array((int) $request->input('per_page', 10), [10, 25, 50, 100], true)
+            ? (int) $request->input('per_page', 10)
+            : 10;
         $query = $cfg['model']::query();
         foreach (($cfg['relations'] ?? []) as $relation) {
             $query->with($relation);
@@ -35,10 +41,18 @@ class AdminResourceController extends Controller
                 $query->where($filter, $request->input($filter));
             }
         }
+        $sort = in_array($request->input('sort'), $allowedSorts, true) ? $request->input('sort') : null;
+        if ($sort) {
+            $query->orderBy($sort, $request->input('direction') === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest();
+        }
+
         return view('admin.crud.index', [
             'cfg' => $cfg,
             'resource' => $request->route('resource'),
-            'records' => $query->latest()->paginate(10)->withQueryString(),
+            'allowedSorts' => $allowedSorts,
+            'records' => $query->paginate($perPage)->withQueryString(),
         ]);
     }
 

@@ -1,0 +1,76 @@
+name: Promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Source branch"
+        required: true
+        type: choice
+        options:
+          - develop
+          - qa
+      to:
+        description: "Target branch"
+        required: true
+        type: choice
+        options:
+          - qa
+          - main
+
+jobs:
+  promote:
+    name: Promote ${{ github.event.inputs.from }} → ${{ github.event.inputs.to }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Validate promotion path
+        run: |
+          FROM="${{ github.event.inputs.from }}"
+          TO="${{ github.event.inputs.to }}"
+          if [[ "$FROM" == "develop" && "$TO" == "qa" ]]; then
+            echo "OK: develop → qa"
+          elif [[ "$FROM" == "qa" && "$TO" == "main" ]]; then
+            echo "OK: qa → main (production)"
+          else
+            echo "Invalid promote path. Allowed: develop→qa, qa→main"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create promote pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FROM="${{ github.event.inputs.from }}"
+          TO="${{ github.event.inputs.to }}"
+          TITLE="Promote ${FROM} → ${TO}"
+          BODY=$(cat <<EOF
+          ## Summary
+          - Promote \`${FROM}\` into \`${TO}\` per portfolio release sequence
+          - Sequence: feature/* → develop (dev) → qa → main (production)
+
+          ## Checklist
+          - [ ] CI green on source branch
+          - [ ] Smoke-tested on ${FROM} environment
+          - [ ] Ready for ${TO}
+          EOF
+          )
+          # Ensure target branch exists remotely
+          git fetch origin "$TO" || git push origin "HEAD:refs/heads/$TO"
+          git fetch origin "$FROM"
+          EXISTING=$(gh pr list --base "$TO" --head "$FROM" --state open --json number --jq ".[0].number")
+          if [ -n "$EXISTING" ]; then
+            echo "PR already open: #$EXISTING"
+            gh pr view "$EXISTING" --web || true
+            echo "PR_URL=$(gh pr view "$EXISTING" --json url --jq .url)" >> "$GITHUB_OUTPUT"
+          else
+            URL=$(gh pr create --base "$TO" --head "$FROM" --title "$TITLE" --body "$BODY")
+            echo "Created $URL"
+          fi
