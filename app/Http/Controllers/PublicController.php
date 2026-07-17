@@ -23,10 +23,39 @@ class PublicController extends Controller
 
     public function products(Request $request)
     {
-        $products = Product::with('category')->where('status', 'active')
-            ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
-            ->latest()->paginate(9)->withQueryString();
-        return view('public.products', compact('products'));
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'integer', 'exists:categories,id'],
+            'billing_type' => ['nullable', 'string', 'max:50'],
+            'sort' => ['nullable', 'in:newest,name_asc,name_desc,price_asc,price_desc'],
+            'per_page' => ['nullable', 'integer', 'in:9,18,36'],
+        ]);
+
+        $query = Product::with('category')
+            ->where('status', 'active')
+            ->when($validated['search'] ?? null, function ($query, $search) {
+                $query->where(function ($nested) use ($search) {
+                    $nested->where('name', 'like', "%{$search}%")
+                        ->orWhere('short_description', 'like', "%{$search}%");
+                });
+            })
+            ->when($validated['category'] ?? null, fn ($query, $category) => $query->where('category_id', $category))
+            ->when($validated['billing_type'] ?? null, fn ($query, $type) => $query->where('billing_type', $type));
+
+        match ($validated['sort'] ?? 'newest') {
+            'name_asc' => $query->orderBy('name'),
+            'name_desc' => $query->orderByDesc('name'),
+            'price_asc' => $query->orderBy('price'),
+            'price_desc' => $query->orderByDesc('price'),
+            default => $query->latest(),
+        };
+
+        $products = $query->paginate($validated['per_page'] ?? 9)->withQueryString();
+        $categories = \App\Models\Category::where('status', 'active')->orderBy('name')->get();
+        $billingTypes = Product::where('status', 'active')->whereNotNull('billing_type')
+            ->distinct()->orderBy('billing_type')->pluck('billing_type');
+
+        return view('public.products', compact('products', 'categories', 'billingTypes'));
     }
 
     public function productDetail(string $slug)
